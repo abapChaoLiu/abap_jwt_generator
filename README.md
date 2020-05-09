@@ -3,7 +3,7 @@
 # ABAP JWT Generator
 Generate Json Web Token (JWT) in ABAP.
 
-## Demo Code
+## Demo program on how to use
 ```abap
 REPORT zrpt_jwt_generator_demo.
 
