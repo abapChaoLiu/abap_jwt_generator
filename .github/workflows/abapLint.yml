@@ -1,4 +1,5 @@
 name: abapLint
+  
 on: 
   push:
     paths: '/src/**'
@@ -8,6 +9,7 @@ on:
     paths: '/src/**'
     branches:
       - master
+
 jobs:
   abapLint:
     runs-on: ubuntu-latest
