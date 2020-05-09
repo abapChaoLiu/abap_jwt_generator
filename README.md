@@ -8,16 +8,10 @@ Generate Json Web Token (JWT) in ABAP.
 REPORT zrpt_jwt_generator_demo.
 
 DATA: jwt_generator TYPE REF TO zcl_jwt_generator.
-
 DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
       jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
-
-DATA: current_timestamp TYPE timestamp,
-      exp_timestamp     TYPE tzntstmpl,
-      diff_second       TYPE tzntstmpl,
-      exp_second        TYPE int8,
-      ssfinfo           TYPE ssfinfo.
-
+DATA: exp_second        TYPE int8,
+      ssf_info           TYPE ssfinfo.
 DATA: start_timestamp TYPE timestamp VALUE '19700101000000',
       ssf_id          TYPE ssfid VALUE '<implicit>',
       "PSE profile with private key
@@ -25,30 +19,13 @@ DATA: start_timestamp TYPE timestamp VALUE '19700101000000',
 
 
 jwt_header-alg  = 'RS256'.
-
-GET TIME STAMP FIELD current_timestamp.
-cl_abap_tstmp=>add(
-  EXPORTING
-    tstmp                      =  current_timestamp   " UTC Time Stamp
-    secs                       =  120   " Time Interval in Seconds
-  RECEIVING
-    r_tstmp                    =  exp_timestamp   ). " UTC Time Stamp
-cl_abap_tstmp=>subtract(
-  EXPORTING
-    tstmp1                     =  exp_timestamp   " UTC Time Stamp
-    tstmp2                     =  start_timestamp   " UTC Time Stamp
-  RECEIVING
-    r_secs                     =  diff_second  ). " Time Interval in Seconds
-
-exp_second = diff_second.
 jwt_claim = VALUE #(
   iss = 'UserID'
   sub = 'example@gmail.com'
   aud = 'https://login.example.com'
   exp = exp_second ).
 
-
-ssfinfo = VALUE #( id = ssf_id profile = ssf_profile ).
+ssf_info = VALUE #( id = ssf_id profile = ssf_profile ).
 
 CREATE OBJECT jwt_generator.
 TRY.
