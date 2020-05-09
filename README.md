@@ -1,4 +1,4 @@
-![Build Status](https://github.com/abapChaoLiu/abap_jwt_genrator/workflows/abapLint/badge.svg)
+![abapLint](https://github.com/abapChaoLiu/abap_jwt_generator/workflows/abapLint/badge.svg?branch=master)
 
 # ABAP JWT Generator
 
