@@ -2,7 +2,7 @@
 
 # ABAP JWT Generator
 
-## Simple Demo
+## Demo Code
 ```abap
 REPORT zrpt_jwt_generator_demo.
 
