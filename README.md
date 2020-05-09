@@ -19,11 +19,10 @@ DATA: start_timestamp TYPE timestamp VALUE '19700101000000',
 
 
 jwt_header-alg  = 'RS256'.
-jwt_claim = VALUE #(
-  iss = 'UserID'
-  sub = 'example@gmail.com'
-  aud = 'https://login.example.com'
-  exp = exp_second ).
+jwt_claim = VALUE #(  iss = 'UserID'
+                      sub = 'example@gmail.com'
+                      aud = 'https://login.example.com'
+                      exp = exp_second ).
 
 ssf_info = VALUE #( id = ssf_id profile = ssf_profile ).
 
