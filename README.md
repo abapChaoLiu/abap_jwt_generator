@@ -1,6 +1,7 @@
 ![abapLint](https://github.com/abapChaoLiu/abap_jwt_generator/workflows/abapLint/badge.svg?branch=master)
 
 # ABAP JWT Generator
+Generator Json Web Token (JWT) in ABAP.
 
 ## Demo Code
 ```abap
