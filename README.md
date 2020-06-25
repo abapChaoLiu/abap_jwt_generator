@@ -39,7 +39,6 @@ TRY.
     WRITE /: 'ERROR when generate JWT token.'.
     WRITE /: lo_exp->get_text( ).
 ENDTRY.
-write: lv_where_clause.
 ```
 
 ## Credits and references
