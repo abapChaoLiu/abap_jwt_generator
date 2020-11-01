@@ -32,6 +32,10 @@ CLASS zcl_jwt_generator DEFINITION
       RETURNING VALUE(jwt) TYPE string
       RAISING   zcx_jwt_generator.
 
+    METHODS get_access_token_by_profile
+      IMPORTING profile             TYPE zjwt_profile-profile_name
+      RETURNING VALUE(access_token) TYPE string
+      RAISING   zcx_jwt_generator.
 
     METHODS base64url_encode
       IMPORTING unencoded        TYPE string
@@ -43,6 +47,8 @@ CLASS zcl_jwt_generator DEFINITION
 
     TYPES:
       ty_tssfbin TYPE STANDARD TABLE OF ssfbin WITH KEY table_line WITHOUT FURTHER SECONDARY KEYS.
+
+    DATA: jwt_profile TYPE zjwt_profile.
 
     METHODS string_to_binary_tab
       IMPORTING input_string       TYPE string
@@ -56,6 +62,7 @@ CLASS zcl_jwt_generator DEFINITION
       RAISING   zcx_jwt_generator.
 
 ENDCLASS.
+
 
 
 CLASS zcl_jwt_generator IMPLEMENTATION.
@@ -196,7 +203,6 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
   METHOD get_jwt_by_profile.
 
-    DATA: jwt_profile TYPE zjwt_profile.
     DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
           jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
 
@@ -241,11 +247,93 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
          RECEIVING
            jwt            = jwt ).
 
-
     ELSE.
       "TO DO
       RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
     ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD get_access_token_by_profile.
+
+    DATA: lo_client TYPE REF TO if_http_client,
+          jwt       TYPE string.
+    FIELD-SYMBOLS: <data>         TYPE data,
+                   <access_token> TYPE data.
+
+    jwt = get_jwt_by_profile( profile = profile ).
+
+    CALL METHOD cl_http_client=>create_by_url
+      EXPORTING
+        url                = jwt_profile-aud    " URL
+        ssl_id             = 'ANONYM'    " SSL Identity
+      IMPORTING
+        client             = lo_client   " HTTP Client Abstraction
+      EXCEPTIONS
+        argument_not_found = 1
+        plugin_not_active  = 2
+        internal_error     = 3
+        OTHERS             = 4.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+    ENDIF.
+
+
+    IF lo_client IS NOT BOUND.
+      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+    ENDIF.
+
+    lo_client->request->set_method( if_http_request=>co_request_method_post ).
+    lo_client->request->set_formfield_encoding( formfield_encoding = if_http_entity=>co_formfield_encoding_encoded ).
+
+    lo_client->request->set_header_field(
+      EXPORTING
+        name  =  'Content-type'   " Name of the header field
+        value =  'application/x-www-form-urlencoded'   " HTTP header field value
+    ).
+
+    lo_client->request->set_form_field(
+      EXPORTING
+        name  = 'grant_type'
+        value = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
+    ).
+
+    lo_client->request->set_form_field(
+      EXPORTING
+        name  = 'assertion'
+        value = jwt
+    ).
+
+    lo_client->send( ).
+    lo_client->receive(
+      EXCEPTIONS
+        http_communication_failure = 1
+        http_invalid_state         = 2
+        http_processing_failed     = 3
+    ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+    ENDIF.
+
+    DATA(response_json) = lo_client->response->get_cdata( ).
+
+    lo_client->close( ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+    ENDIF.
+
+    DATA(data_ref) = /ui2/cl_json=>generate( json = response_json ).
+    IF data_ref IS BOUND.
+      ASSIGN data_ref->* TO <data>.
+      ASSIGN COMPONENT 'access_token' OF STRUCTURE <data> TO <access_token>.
+      IF <access_token> IS ASSIGNED.
+        data_ref = <access_token>.
+        ASSIGN data_ref->* TO <data>.
+        access_token = <data>.
+      ENDIF.
+    ENDIF.
+
 
   ENDMETHOD.
 
