@@ -27,6 +27,12 @@ CLASS zcl_jwt_generator DEFINITION
       RETURNING VALUE(jwt)       TYPE string
       RAISING   zcx_jwt_generator.
 
+    METHODS get_jwt_by_profile
+      IMPORTING profile    TYPE zjwt_profile-profile_name
+      RETURNING VALUE(jwt) TYPE string
+      RAISING   zcx_jwt_generator.
+
+
     METHODS base64url_encode
       IMPORTING unencoded        TYPE string
       RETURNING VALUE(base64url) TYPE string.
@@ -187,4 +193,60 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
       RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
     ENDIF.
   ENDMETHOD.
+
+
+  METHOD get_jwt_by_profile.
+
+    DATA: jwt_profile TYPE zjwt_profile.
+    DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
+          jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
+
+    DATA: current_timestamp TYPE timestamp,
+          exp_timestamp     TYPE tzntstmpl,
+          diff_second       TYPE tzntstmpl,
+          exp_second        TYPE int8,
+          ssfinfo           TYPE ssfinfo.
+    CONSTANTS: start_timestamp TYPE timestamp VALUE '19700101000000'.
+
+    SELECT SINGLE * FROM zjwt_profile INTO jwt_profile
+           WHERE profile_name =  profile.
+    IF sy-subrc = 0.
+      GET TIME STAMP FIELD current_timestamp.
+      cl_abap_tstmp=>add(
+        EXPORTING
+          tstmp                      =  current_timestamp   " UTC Time Stamp
+          secs                       =  jwt_profile-time_interval   " Time Interval in Seconds
+        RECEIVING
+          r_tstmp                    =  exp_timestamp   ). " UTC Time Stamp
+      cl_abap_tstmp=>subtract(
+        EXPORTING
+          tstmp1                     =  exp_timestamp   " UTC Time Stamp
+          tstmp2                     =  start_timestamp   " UTC Time Stamp
+        RECEIVING
+          r_secs                     =  diff_second  ). " Time Interval in Seconds
+
+
+      MOVE-CORRESPONDING jwt_profile TO jwt_claim.
+      exp_second = diff_second.
+      jwt_claim-exp = exp_second.
+
+      ssfinfo-id = jwt_profile-ssf_id.
+      ssfinfo-profile = jwt_profile-ssf_profile.
+      jwt_header-alg = jwt_profile-alg.
+
+      generate_jwt(
+         EXPORTING
+           jwt_header     = jwt_header
+           jwt_claim      = jwt_claim
+           ssf_info       = ssfinfo
+         RECEIVING
+           jwt            = jwt ).
+
+    ELSE.
+      "TO DO
+      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+    ENDIF.
+
+  ENDMETHOD.
+
 ENDCLASS.
