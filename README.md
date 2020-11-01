@@ -11,10 +11,10 @@ If JWT profile is maintained in table ZJWT_PROFILE, use method get_jwt_by_profil
 
 ```
 DATA: jwt_generator TYPE REF TO zcl_jwt_generator,
-      jwt_token TYPE string.
+      jwtn TYPE string.
 
 CREATE OBJECT jwt_client.
-jwt_token = jwt_client->get_jwt_by_profile( 'JWT_PROFILE_NAME' ).
+jwt = jwt_client->get_jwt_by_profile( 'JWT_PROFILE_NAME' ).
 ```      
 
 ## Demo 2 - method generate_jwt().
