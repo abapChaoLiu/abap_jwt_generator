@@ -58,7 +58,6 @@ CLASS zcl_jwt_generator DEFINITION
 ENDCLASS.
 
 
-
 CLASS zcl_jwt_generator IMPLEMENTATION.
 
 
@@ -241,6 +240,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
            ssf_info       = ssfinfo
          RECEIVING
            jwt            = jwt ).
+
 
     ELSE.
       "TO DO
