@@ -11,7 +11,7 @@ If JWT profile is maintained in table ZJWT_PROFILE, use method get_jwt_by_profil
 
 ```
 DATA: jwt_generator TYPE REF TO zcl_jwt_generator,
-      jwtn TYPE string.
+      jwt TYPE string.
 
 CREATE OBJECT jwt_client.
 jwt = jwt_client->get_jwt_by_profile( 'JWT_PROFILE_NAME' ).
@@ -56,6 +56,21 @@ TRY.
     WRITE /: lo_exp->get_text( ).
 ENDTRY.
 ```
+
+## Demo 3 - method get_access_token_by_profile().
+
+If JWT profile is maintained in table ZJWT_PROFILE, use method get_access_token_by_profile() to get JWT Access Token.
+
+![JWT profile screenshot](/doc/jwt_profile.png)
+
+```
+DATA: jwt_generator TYPE REF TO zcl_jwt_generator,
+      jwt_access_token TYPE string.
+
+CREATE OBJECT jwt_client.
+jwt_access_token = jwt_client->get_access_token_by_profile( 'JWT_PROFILE_NAME' ).
+```
+
 ## Credits and references
 
 Class ZCL_JWT_Generator is modified from Dimitri Seifmann's post [Connect from AS ABAP to Google Cloud Platform App-Engine resource secured with Google Identity-Aware Proxy](https://blogs.sap.com/2019/11/10/connect-from-as-abap-to-google-cloud-platform-app-engine-resource-secured-with-google-identity-aware-proxy/).
