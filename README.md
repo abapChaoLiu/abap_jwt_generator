@@ -9,7 +9,7 @@ If JWT profile is maintained in table ZJWT_PROFILE, use method get_jwt_by_profil
 
 ![JWT profile screenshot](/doc/jwt_profile.png)
 
-```
+```abap
 DATA: jwt_generator TYPE REF TO zcl_jwt_generator,
       jwt TYPE string.
 
@@ -63,7 +63,7 @@ If JWT profile is maintained in table ZJWT_PROFILE, use method get_access_token_
 
 ![JWT profile screenshot](/doc/jwt_profile.png)
 
-```
+```abap
 DATA: jwt_generator TYPE REF TO zcl_jwt_generator,
       jwt_access_token TYPE string.
 
