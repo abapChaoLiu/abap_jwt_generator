@@ -65,7 +65,7 @@
     "prefer_returning_to_exporting": false,
     "selection_screen_naming": true,
     "sicf_consistency": true,
-    "sql_escape_host_variables": true,
+    "sql_escape_host_variables": false,
     "xml_consistency": true,
     "check_no_handler_pragma": true,
     "newline_between_methods": false,
@@ -106,7 +106,7 @@
     },
     "begin_end_names": true,
     "check_transformation_exists": true,
-    "check_syntax": true,
+    "check_syntax": false,
     "class_attribute_names": {
       "ignoreExceptions": true,
       "statics": ".",
