@@ -2,8 +2,8 @@ name: abapLint
 
 on:
  push:
-    branches: [ master ]
-    paths: '/src/**.abap'
+    branches:
+     - master
 
 jobs:
   abapLint:
