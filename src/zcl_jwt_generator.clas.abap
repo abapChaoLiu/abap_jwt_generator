@@ -64,7 +64,6 @@ CLASS zcl_jwt_generator DEFINITION
 ENDCLASS.
 
 
-
 CLASS zcl_jwt_generator IMPLEMENTATION.
 
 
