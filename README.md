@@ -71,6 +71,26 @@ CREATE OBJECT jwt_client.
 jwt_access_token = jwt_client->get_access_token_by_profile( 'JWT_PROFILE_NAME' ).
 ```
 
+## Demo 4 - method generate_jwt_with_secret().
+You can use method generate_jwt_with_secret() to generate a JWT with the secret key, like [JWT Debugger](https://jwt.io/#debugger-io).
+```abap
+GET TIME STAMP FIELD DATA(timestamp).
+
+DATA(jwt_generator) = NEW zcl_jwt_generator( ).
+
+TRY.
+    DATA(jwt_result) =
+        jwt_generator->generate_jwt_with_secret(
+            jwt_header = VALUE #( alg  = 'HS256' typ = 'JWT' )
+            jwt_claim  = VALUE #( sub  = '1234567890'
+                                  name = 'John Doe'
+                                  iat  = jwt_generator->convert_abap_timestamp_to_unix( timestamp ) )
+            secret     = '1WRAv0Usf90-jr2W7UQBQBLvIBBFq8vumq-VzrR3h7E'
+            algorithm  = 'SHA256' ).
+  CATCH zcx_jwt_generator INTO DATA(lx_jwt).
+ENDTRY.
+```
+
 ## Credits and references
 
 Class ZCL_JWT_Generator is modified from Dimitri Seifmann's post [Connect from AS ABAP to Google Cloud Platform App-Engine resource secured with Google Identity-Aware Proxy](https://blogs.sap.com/2019/11/10/connect-from-as-abap-to-google-cloud-platform-app-engine-resource-secured-with-google-identity-aware-proxy/).
