@@ -315,19 +315,16 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
     lo_client->request->set_formfield_encoding( formfield_encoding = if_http_entity=>co_formfield_encoding_encoded ).
 
     lo_client->request->set_header_field(
-      EXPORTING
         name  =  'Content-type'   " Name of the header field
         value =  'application/x-www-form-urlencoded'   " HTTP header field value
     ).
 
     lo_client->request->set_form_field(
-      EXPORTING
         name  = 'grant_type'
         value = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
     ).
 
     lo_client->request->set_form_field(
-      EXPORTING
         name  = 'assertion'
         value = jwt
     ).
@@ -337,8 +334,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
       EXCEPTIONS
         http_communication_failure = 1
         http_invalid_state         = 2
-        http_processing_failed     = 3
-    ).
+        http_processing_failed     = 3 ).
     IF sy-subrc <> 0.
       zcx_jwt_generator=>raise_system( ).
     ENDIF.
