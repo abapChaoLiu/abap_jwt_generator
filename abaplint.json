@@ -106,7 +106,7 @@
     },
     "begin_end_names": true,
     "check_transformation_exists": true,
-    "check_syntax": true,
+    "check_syntax": false,
     "class_attribute_names": {
       "ignoreExceptions": true,
       "statics": ".",
