@@ -291,7 +291,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
     jwt = get_jwt_by_profile( profile = profile ).
 
-    CALL METHOD cl_http_client=>create_by_url
+    cl_http_client=>create_by_url(
       EXPORTING
         url                = jwt_profile-aud    " URL
         ssl_id             = 'ANONYM'    " SSL Identity
@@ -301,7 +301,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         argument_not_found = 1
         plugin_not_active  = 2
         internal_error     = 3
-        OTHERS             = 4.
+        OTHERS             = 4 ).
     IF sy-subrc <> 0.
       zcx_jwt_generator=>raise_system( ).
     ENDIF.
@@ -315,30 +315,23 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
     lo_client->request->set_formfield_encoding( formfield_encoding = if_http_entity=>co_formfield_encoding_encoded ).
 
     lo_client->request->set_header_field(
-      EXPORTING
         name  =  'Content-type'   " Name of the header field
-        value =  'application/x-www-form-urlencoded'   " HTTP header field value
-    ).
+        value =  'application/x-www-form-urlencoded' ).   " HTTP header field value
 
     lo_client->request->set_form_field(
-      EXPORTING
         name  = 'grant_type'
-        value = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
-    ).
+        value = 'urn:ietf:params:oauth:grant-type:jwt-bearer' ).
 
     lo_client->request->set_form_field(
-      EXPORTING
         name  = 'assertion'
-        value = jwt
-    ).
+        value = jwt ).
 
     lo_client->send( ).
     lo_client->receive(
       EXCEPTIONS
         http_communication_failure = 1
         http_invalid_state         = 2
-        http_processing_failed     = 3
-    ).
+        http_processing_failed     = 3 ).
     IF sy-subrc <> 0.
       zcx_jwt_generator=>raise_system( ).
     ENDIF.
@@ -367,8 +360,8 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
   METHOD get_jwt_by_profile.
 
-    DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
-          jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
+    DATA: jwt_header TYPE ty_jwt_header,
+          jwt_claim  TYPE ty_jwt_claim.
 
     DATA: current_timestamp TYPE timestamp,
           exp_timestamp     TYPE tzntstmpl,
