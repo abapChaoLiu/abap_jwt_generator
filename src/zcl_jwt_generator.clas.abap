@@ -89,7 +89,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         failed       = 1
         OTHERS       = 2.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
   ENDMETHOD.
 
@@ -161,7 +161,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         ssf_krn_invalid_parlen       = 9
         ssf_fb_input_parameter_error = 10.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
     signature = binary_tab_to_string( input_bins = output_bins
@@ -187,7 +187,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         failed   = 1
         OTHERS   = 2.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
     CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
@@ -196,7 +196,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
       TABLES
         binary_tab = output_bins.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
   ENDMETHOD.
 
@@ -249,7 +249,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
     ELSE.
       "TO DO
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
   ENDMETHOD.
@@ -276,12 +276,12 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         internal_error     = 3
         OTHERS             = 4.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
 
     IF lo_client IS NOT BOUND.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
     lo_client->request->set_method( if_http_request=>co_request_method_post ).
@@ -313,14 +313,14 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
         http_processing_failed     = 3
     ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
     DATA(response_json) = lo_client->response->get_cdata( ).
 
     lo_client->close( ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_jwt_generator USING MESSAGE.
+      zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
     DATA(data_ref) = /ui2/cl_json=>generate( json = response_json ).
