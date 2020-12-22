@@ -12,7 +12,6 @@ jobs:
   abapLint:
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v2
      - name: abapLint
        uses: abaplint/actions-abaplint@master
        env: 
