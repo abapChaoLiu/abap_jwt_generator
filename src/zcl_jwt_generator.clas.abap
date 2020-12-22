@@ -3,52 +3,86 @@ CLASS zcl_jwt_generator DEFINITION
   CREATE PUBLIC .
 
   PUBLIC SECTION.
-
-    TYPES: BEGIN OF ty_jwt_header,
-             alg TYPE string,
-           END OF ty_jwt_header.
-
-    TYPES: BEGIN OF ty_jwt_claim,
-             iss TYPE string, "Issuer
-             sub TYPE string, "Subject
-             aud TYPE string, "Audience
-             exp TYPE string, "Expiration Time
-             nbf TYPE string, "Not Before
-             iat TYPE string, "Issued At
-             jti TYPE string, "JWT ID
-           END OF ty_jwt_claim.
+    TYPES:
+      BEGIN OF ty_jwt_header,
+        alg TYPE string,
+        typ TYPE string,
+      END OF ty_jwt_header .
+    TYPES:
+      BEGIN OF ty_jwt_claim,
+        name TYPE string, " Name
+        iss  TYPE string, "Issuer
+        sub  TYPE string, "Subject
+        aud  TYPE string, "Audience
+        exp  TYPE string, "Expiration Time
+        nbf  TYPE string, "Not Before
+        iat  TYPE string, "Issued At
+        jti  TYPE string, "JWT ID
+      END OF ty_jwt_claim .
 
     METHODS generate_jwt
-      IMPORTING jwt_header       TYPE ty_jwt_header
-                jwt_claim        TYPE ty_jwt_claim
-                ssf_info         TYPE ssfinfo
-                ssf_format       TYPE ssfform  DEFAULT 'PKCS1-V1.5'
-                ssf_hash_agrithm TYPE ssfhash  DEFAULT 'SHA256'
-      RETURNING VALUE(jwt)       TYPE string
-      RAISING   zcx_jwt_generator.
+      IMPORTING
+        !jwt_header       TYPE ty_jwt_header
+        !jwt_claim        TYPE ty_jwt_claim
+        !ssf_info         TYPE ssfinfo
+        !ssf_format       TYPE ssfform DEFAULT 'PKCS1-V1.5'
+        !ssf_hash_agrithm TYPE ssfhash DEFAULT 'SHA256'
+      RETURNING
+        VALUE(jwt)        TYPE string
+      RAISING
+        zcx_jwt_generator .
+
+    METHODS generate_jwt_with_secret
+      IMPORTING
+        !jwt_header   TYPE ty_jwt_header
+        !jwt_claim    TYPE ty_jwt_claim
+        !secret       TYPE string
+        !algorithm    TYPE string DEFAULT 'SHA256'
+      RETURNING
+        VALUE(result) TYPE string
+      RAISING
+        zcx_jwt_generator .
 
     METHODS get_jwt_by_profile
-      IMPORTING profile    TYPE zjwt_profile-profile_name
-      RETURNING VALUE(jwt) TYPE string
-      RAISING   zcx_jwt_generator.
+      IMPORTING
+        !profile   TYPE zjwt_profile-profile_name
+      RETURNING
+        VALUE(jwt) TYPE string
+      RAISING
+        zcx_jwt_generator .
 
     METHODS get_access_token_by_profile
-      IMPORTING profile             TYPE zjwt_profile-profile_name
-      RETURNING VALUE(access_token) TYPE string
-      RAISING   zcx_jwt_generator.
+      IMPORTING
+        !profile            TYPE zjwt_profile-profile_name
+      RETURNING
+        VALUE(access_token) TYPE string
+      RAISING
+        zcx_jwt_generator .
 
     METHODS base64url_encode
-      IMPORTING unencoded        TYPE string
-      RETURNING VALUE(base64url) TYPE string.
+      IMPORTING
+        !unencoded       TYPE string
+      RETURNING
+        VALUE(base64url) TYPE string .
+
+    METHODS convert_abap_timestamp_to_unix
+      IMPORTING
+        !timestamp    TYPE timestamp
+      RETURNING
+        VALUE(result) TYPE i .
 
   PROTECTED SECTION.
 
   PRIVATE SECTION.
-
     TYPES:
       ty_tssfbin TYPE STANDARD TABLE OF ssfbin WITH KEY table_line WITHOUT FURTHER SECONDARY KEYS.
 
-    DATA: jwt_profile TYPE zjwt_profile.
+    DATA:
+      jwt_profile TYPE zjwt_profile.
+
+    METHODS format_jwt_claim
+      IMPORTING jwt_claim     TYPE ty_jwt_claim
+      RETURNING VALUE(result) TYPE ty_jwt_claim.
 
     METHODS string_to_binary_tab
       IMPORTING input_string       TYPE string
@@ -61,6 +95,10 @@ CLASS zcl_jwt_generator DEFINITION
       RETURNING VALUE(output_string) TYPE string
       RAISING   zcx_jwt_generator.
 
+    METHODS format_base64
+      IMPORTING input         TYPE string
+      RETURNING VALUE(result) TYPE string.
+
 ENDCLASS.
 
 
@@ -69,10 +107,7 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
 
   METHOD base64url_encode.
-    base64url = cl_http_utility=>encode_base64( unencoded = unencoded ).
-    REPLACE ALL OCCURRENCES OF '=' IN base64url WITH ''.
-    REPLACE ALL OCCURRENCES OF '+' IN base64url WITH '-'.
-    REPLACE ALL OCCURRENCES OF '/' IN base64url WITH '_'.
+    base64url = format_base64( cl_http_utility=>encode_base64( unencoded = unencoded ) ).
   ENDMETHOD.
 
 
@@ -91,6 +126,37 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
     IF sy-subrc <> 0.
       zcx_jwt_generator=>raise_system( ).
     ENDIF.
+  ENDMETHOD.
+
+
+  METHOD convert_abap_timestamp_to_unix.
+
+    CONVERT TIME STAMP timestamp TIME ZONE 'UTC' INTO DATE DATA(date) TIME DATA(time).
+
+    cl_pco_utility=>convert_abap_timestamp_to_java(
+        EXPORTING
+            iv_date = date
+            iv_time = time
+        IMPORTING
+            ev_timestamp = DATA(lv_unix_timestamp) ).
+
+    result =
+        COND #(
+            WHEN strlen( lv_unix_timestamp ) > 10
+                THEN lv_unix_timestamp(10)
+                ELSE lv_unix_timestamp ).
+
+  ENDMETHOD.
+
+
+  METHOD format_base64.
+
+    result = input.
+
+    REPLACE ALL OCCURRENCES OF '=' IN result WITH ''.
+    REPLACE ALL OCCURRENCES OF '+' IN result WITH '-'.
+    REPLACE ALL OCCURRENCES OF '/' IN result WITH '_'.
+
   ENDMETHOD.
 
 
@@ -174,83 +240,45 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD string_to_binary_tab.
-    DATA lv_xstring TYPE xstring.
+  METHOD generate_jwt_with_secret.
 
-    CALL FUNCTION 'SCMS_STRING_TO_XSTRING'
-      EXPORTING
-        text     = input_string
-        encoding = '4110'
-      IMPORTING
-        buffer   = lv_xstring
-      EXCEPTIONS
-        failed   = 1
-        OTHERS   = 2.
-    IF sy-subrc <> 0.
-      zcx_jwt_generator=>raise_system( ).
-    ENDIF.
+    DATA(header_json) =
+        /ui2/cl_json=>serialize(
+            data        = jwt_header
+            compress    = abap_true
+            pretty_name = /ui2/cl_json=>pretty_mode-low_case ).
 
-    CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
-      EXPORTING
-        buffer     = lv_xstring
-      TABLES
-        binary_tab = output_bins.
-    IF sy-subrc <> 0.
-      zcx_jwt_generator=>raise_system( ).
-    ENDIF.
-  ENDMETHOD.
+    DATA(header_base64) = base64url_encode( header_json ).
 
+    DATA(payload_json) =
+        /ui2/cl_json=>serialize(
+            data        = format_jwt_claim( jwt_claim )
+            compress    = abap_true
+            pretty_name = /ui2/cl_json=>pretty_mode-low_case ).
 
-  METHOD get_jwt_by_profile.
+    DATA(payload_base64) = base64url_encode( payload_json ).
 
-    DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
-          jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
+    DATA(data_to_sign) =
+        |{ header_base64 }.{ payload_base64 }|.
 
-    DATA: current_timestamp TYPE timestamp,
-          exp_timestamp     TYPE tzntstmpl,
-          diff_second       TYPE tzntstmpl,
-          exp_second        TYPE int8,
-          ssfinfo           TYPE ssfinfo.
-    CONSTANTS: start_timestamp TYPE timestamp VALUE '19700101000000'.
+    TRY.
+        cl_abap_hmac=>calculate_hmac_for_char(
+           EXPORTING
+             if_algorithm     = algorithm
+             if_key           = cl_abap_hmac=>string_to_xstring( secret )
+             if_data          = data_to_sign
+           IMPORTING
+             ef_hmacb64string = DATA(hmacb64string) ).
+      CATCH cx_abap_message_digest INTO DATA(lx_message_digest).
+        RAISE EXCEPTION TYPE zcx_jwt_generator
+          EXPORTING
+            previous = lx_message_digest.
+    ENDTRY.
 
-    SELECT SINGLE * FROM zjwt_profile INTO jwt_profile
-           WHERE profile_name =  profile.
-    IF sy-subrc = 0.
-      GET TIME STAMP FIELD current_timestamp.
-      cl_abap_tstmp=>add(
-        EXPORTING
-          tstmp                      =  current_timestamp   " UTC Time Stamp
-          secs                       =  jwt_profile-time_interval   " Time Interval in Seconds
-        RECEIVING
-          r_tstmp                    =  exp_timestamp   ). " UTC Time Stamp
-      cl_abap_tstmp=>subtract(
-        EXPORTING
-          tstmp1                     =  exp_timestamp   " UTC Time Stamp
-          tstmp2                     =  start_timestamp   " UTC Time Stamp
-        RECEIVING
-          r_secs                     =  diff_second  ). " Time Interval in Seconds
+    DATA(lv_signature) = format_base64( hmacb64string ).
 
-
-      MOVE-CORRESPONDING jwt_profile TO jwt_claim.
-      exp_second = diff_second.
-      jwt_claim-exp = exp_second.
-
-      ssfinfo-id = jwt_profile-ssf_id.
-      ssfinfo-profile = jwt_profile-ssf_profile.
-      jwt_header-alg = jwt_profile-alg.
-
-      generate_jwt(
-         EXPORTING
-           jwt_header     = jwt_header
-           jwt_claim      = jwt_claim
-           ssf_info       = ssfinfo
-         RECEIVING
-           jwt            = jwt ).
-
-    ELSE.
-      "TO DO
-      zcx_jwt_generator=>raise_system( ).
-    ENDIF.
+    result =
+        |{ header_base64 }.{ payload_base64 }.{ lv_signature }|.
 
   ENDMETHOD.
 
@@ -337,4 +365,94 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
   ENDMETHOD.
 
+
+  METHOD get_jwt_by_profile.
+
+    DATA: jwt_header TYPE zcl_jwt_generator=>ty_jwt_header,
+          jwt_claim  TYPE zcl_jwt_generator=>ty_jwt_claim.
+
+    DATA: current_timestamp TYPE timestamp,
+          exp_timestamp     TYPE tzntstmpl,
+          diff_second       TYPE tzntstmpl,
+          exp_second        TYPE int8,
+          ssfinfo           TYPE ssfinfo.
+    CONSTANTS: start_timestamp TYPE timestamp VALUE '19700101000000'.
+
+    SELECT SINGLE * FROM zjwt_profile INTO jwt_profile
+           WHERE profile_name =  profile.
+    IF sy-subrc = 0.
+      GET TIME STAMP FIELD current_timestamp.
+      cl_abap_tstmp=>add(
+        EXPORTING
+          tstmp                      =  current_timestamp   " UTC Time Stamp
+          secs                       =  jwt_profile-time_interval   " Time Interval in Seconds
+        RECEIVING
+          r_tstmp                    =  exp_timestamp   ). " UTC Time Stamp
+      cl_abap_tstmp=>subtract(
+        EXPORTING
+          tstmp1                     =  exp_timestamp   " UTC Time Stamp
+          tstmp2                     =  start_timestamp   " UTC Time Stamp
+        RECEIVING
+          r_secs                     =  diff_second  ). " Time Interval in Seconds
+
+
+      MOVE-CORRESPONDING jwt_profile TO jwt_claim.
+      exp_second = diff_second.
+      jwt_claim-exp = exp_second.
+
+      ssfinfo-id = jwt_profile-ssf_id.
+      ssfinfo-profile = jwt_profile-ssf_profile.
+      jwt_header-alg = jwt_profile-alg.
+
+      generate_jwt(
+         EXPORTING
+           jwt_header     = jwt_header
+           jwt_claim      = jwt_claim
+           ssf_info       = ssfinfo
+         RECEIVING
+           jwt            = jwt ).
+
+    ELSE.
+      "TO DO
+      zcx_jwt_generator=>raise_system( ).
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD format_jwt_claim.
+
+    result = jwt_claim.
+
+    result-iat = condense( result-iat ).
+    result-exp = condense( result-exp ).
+
+  ENDMETHOD.
+
+
+  METHOD string_to_binary_tab.
+    DATA lv_xstring TYPE xstring.
+
+    CALL FUNCTION 'SCMS_STRING_TO_XSTRING'
+      EXPORTING
+        text     = input_string
+        encoding = '4110'
+      IMPORTING
+        buffer   = lv_xstring
+      EXCEPTIONS
+        failed   = 1
+        OTHERS   = 2.
+    IF sy-subrc <> 0.
+      zcx_jwt_generator=>raise_system( ).
+    ENDIF.
+
+    CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+      EXPORTING
+        buffer     = lv_xstring
+      TABLES
+        binary_tab = output_bins.
+    IF sy-subrc <> 0.
+      zcx_jwt_generator=>raise_system( ).
+    ENDIF.
+  ENDMETHOD.
 ENDCLASS.
