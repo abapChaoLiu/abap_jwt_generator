@@ -12,7 +12,10 @@ jobs:
   abapLint:
     runs-on: ubuntu-latest
     steps:
-     - name: abapLint
-       uses: abaplint/actions-abaplint@master
-       env: 
-         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 2
+    - name: abapLint
+      uses: abaplint/actions-abaplint@master
+      env: 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
