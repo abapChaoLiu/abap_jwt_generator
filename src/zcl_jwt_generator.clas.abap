@@ -355,6 +355,8 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
       CHANGING
         data = ls_token ).
 
+    access_token = ls_token-access_token.
+
   ENDMETHOD.
 
 
