@@ -284,10 +284,16 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
 
   METHOD get_access_token_by_profile.
 
-    DATA: lo_client TYPE REF TO if_http_client,
-          jwt       TYPE string.
-    FIELD-SYMBOLS: <data>         TYPE data,
-                   <access_token> TYPE data.
+    DATA:
+      BEGIN OF ls_token,
+        access_token TYPE string,
+      END OF ls_token.
+    DATA:
+      lo_client TYPE REF TO if_http_client,
+      jwt       TYPE string.
+    FIELD-SYMBOLS:
+      <data>         TYPE data,
+      <access_token> TYPE data.
 
     jwt = get_jwt_by_profile( profile = profile ).
 
@@ -343,17 +349,13 @@ CLASS zcl_jwt_generator IMPLEMENTATION.
       zcx_jwt_generator=>raise_system( ).
     ENDIF.
 
-    DATA(data_ref) = /ui2/cl_json=>generate( json = response_json ).
-    IF data_ref IS BOUND.
-      ASSIGN data_ref->* TO <data>.
-      ASSIGN COMPONENT 'access_token' OF STRUCTURE <data> TO <access_token>.
-      IF <access_token> IS ASSIGNED.
-        data_ref = <access_token>.
-        ASSIGN data_ref->* TO <data>.
-        access_token = <data>.
-      ENDIF.
-    ENDIF.
+    /ui2/cl_json=>deserialize(
+      EXPORTING
+        json = response_json
+      CHANGING
+        data = ls_token ).
 
+    access_token = ls_token-access_token.
 
   ENDMETHOD.
 
